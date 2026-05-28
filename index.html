@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1923">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="مدخراتي">
+<title>مدخراتي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1a;
+    --surface: #111827;
+    --surface2: #1a2333;
+    --surface3: #222f45;
+    --gold: #f5c842;
+    --gold2: #e6a800;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --text: #f0f4ff;
+    --text2: #8899bb;
+    --border: #1e2d45;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar-title { font-size: 20px; font-weight: 900; color: var(--gold); flex: 1; }
+  .topbar-date { font-size: 12px; color: var(--text2); background: var(--surface2); padding: 4px 10px; border-radius: 20px; }
+  .nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 4px 8px;
+    background: none; border: none;
+    color: var(--text2); font-family: 'Cairo', sans-serif;
+    font-size: 10px; cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px; transition: color 0.2s;
+  }
+  .nav-btn .icon { font-size: 22px; line-height: 1; }
+  .nav-btn.active { color: var(--gold); }
+  .nav-dot { width: 4px; height: 4px; border-radius: 50%; margin-top: 2px; }
+  .nav-btn.active .nav-dot { background: var(--gold); }
+  .page { display: none; padding: 16px 16px 100px; }
+  .page.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .balance-card {
+    background: linear-gradient(135deg, #0d1f35 0%, #162840 50%, #0d1f35 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .balance-card::before { content: ''; position: absolute; top: -40px; left: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(245,200,66,0.08) 0%, transparent 70%); }
+  .balance-label { font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+  .balance-amount { font-size: 36px; font-weight: 900; color: var(--gold); letter-spacing: -1px; line-height: 1; margin-bottom: 4px; }
+  .balance-currency { font-size: 16px; color: var(--gold2); font-weight: 600; }
+  .balance-sub { display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .balance-sub-item { flex: 1; }
+  .balance-sub-item .sub-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .balance-sub-item .sub-val { font-size: 15px; font-weight: 700; }
+  .sub-val.in { color: var(--green); }
+  .sub-val.out { color: var(--red); }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .tx-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.3s ease; }
+  .tx-item:last-child { border-bottom: none; }
+  .tx-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .tx-icon.in { background: rgba(34,197,94,0.15); }
+  .tx-icon.out { background: rgba(239,68,68,0.15); }
+  .tx-icon.save { background: rgba(245,200,66,0.15); }
+  .tx-icon.exp { background: rgba(168,85,247,0.15); }
+  .tx-info { flex: 1; min-width: 0; }
+  .tx-desc { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .tx-amount { font-size: 15px; font-weight: 700; text-align: left; flex-shrink: 0; }
+  .tx-amount.in { color: var(--green); }
+  .tx-amount.out { color: var(--red); }
+  .tx-del { background: none; border: none; color: var(--text2); cursor: pointer; padding: 6px; border-radius: 8px; font-size: 16px; flex-shrink: 0; transition: color 0.2s; }
+  .add-btn { width: 100%; padding: 14px; border-radius: var(--radius); border: 2px dashed var(--border); background: none; color: var(--text2); font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+  .add-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: flex-end; backdrop-filter: blur(4px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 24px 20px 40px; width: 100%; border-top: 2px solid var(--gold2); animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; color: var(--gold); }
+  .modal-close { float: left; background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 600; letter-spacing: 0.5px; display: block; }
+  .form-input, .form-select { width: 100%; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'Cairo', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s; }
+  .form-input:focus, .form-select:focus { border-color: var(--gold); }
+  .form-select option { background: var(--surface2); }
+  .type-btns { display: flex; gap: 8px; margin-bottom: 14px; }
+  .type-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: none; color: var(--text2); font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .type-btn.in.active { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.1); }
+  .type-btn.out.active { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.1); }
+  .type-btn.save-t.active { border-color: var(--gold); color: var(--gold); background: rgba(245,200,66,0.1); }
+  .submit-btn { width: 100%; padding: 14px; border-radius: var(--radius); border: none; background: var(--gold); color: #0a0f1a; font-family: 'Cairo', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity 0.2s; margin-top: 8px; }
+  .saving-item { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 8px; border: 1px solid var(--border); animation: fadeIn 0.3s ease; }
+  .saving-icon { font-size: 26px; }
+  .saving-info { flex: 1; }
+  .saving-name { font-size: 15px; font-weight: 700; }
+  .saving-amount { font-size: 13px; color: var(--gold); font-weight: 600; margin-top: 2px; }
+  .saving-date { font-size: 11px; color: var(--text2); }
+  .saving-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 8px; transition: color 0.2s; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+  .stat-val { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--text2); }
+  .month-selector { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 16px; }
+  .month-nav { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 20px; padding: 4px 8px; border-radius: 8px; transition: color 0.2s; }
+  .month-label { font-size: 15px; font-weight: 700; color: var(--text); }
+  .bar-chart { margin-top: 4px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-label { font-size: 12px; color: var(--text2); width: 55px; text-align: right; flex-shrink: 0; }
+  .bar-wrap { flex: 1; height: 22px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+  .bar-val { font-size: 12px; font-weight: 700; width: 65px; text-align: left; flex-shrink: 0; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">💰 مدخراتي</div>
+  <div class="topbar-date" id="todayDate"></div>
+</div>
+
+<!-- PAGE: WALLET -->
+<div class="page active" id="page-wallet">
+  <div class="balance-card">
+    <div class="balance-label">الرصيد الحالي</div>
+    <div><span class="balance-amount" id="walletBalance">0</span><span class="balance-currency"> جنيه</span></div>
+    <div class="balance-sub">
+      <div class="balance-sub-item"><div class="sub-label">إجمالي الدخل</div><div class="sub-val in" id="totalIn">0</div></div>
+      <div class="balance-sub-item"><div class="sub-label">إجمالي الصرف</div><div class="sub-val out" id="totalOut">0</div></div>
+      <div class="balance-sub-item"><div class="sub-label">محوّش</div><div class="sub-val" style="color:var(--gold)" id="totalSaved">0</div></div>
+    </div>
+  </div>
+  <div class="section-title">آخر المعاملات</div>
+  <div class="card" id="walletTxList" style="padding:4px 16px 4px"></div>
+  <button class="add-btn" onclick="openModal('walletModal')">＋ إضافة معاملة</button>
+</div>
+
+<!-- PAGE: SAVINGS -->
+<div class="page" id="page-savings">
+  <div class="balance-card" style="background:linear-gradient(135deg,#1a1500,#2a1f00);border-color:var(--gold2)">
+    <div class="balance-label">إجمالي التحويش</div>
+    <div><span class="balance-amount" id="savingsTotal">0</span><span class="balance-currency"> جنيه</span></div>
+  </div>
+  <div class="section-title">عناصر التحويش</div>
+  <div id="savingsList"></div>
+  <button class="add-btn" onclick="openModal('savingsModal')">＋ إضافة تحويش</button>
+</div>
+
+<!-- PAGE: EXPENSES -->
+<div class="page" id="page-expenses">
+  <div class="balance-card" style="background:linear-gradient(135deg,#1a0028,#2a0042);border-color:#6b21a8">
+    <div class="balance-label">إجمالي المصاريف</div>
+    <div><span class="balance-amount" style="color:#c084fc" id="expensesTotal">0</span><span class="balance-currency" style="color:#a855f7"> جنيه</span></div>
+  </div>
+  <div class="section-title">سجل المصاريف</div>
+  <div class="card" id="expensesList" style="padding:4px 16px 4px"></div>
+  <button class="add-btn" onclick="openModal('expensesModal')">＋ تسجيل مصروف</button>
+</div>
+
+<!-- PAGE: REPORTS -->
+<div class="page" id="page-reports">
+  <div class="month-selector">
+    <button class="month-nav" onclick="changeMonth(-1)">&#8250;</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button class="month-nav" onclick="changeMonth(1)">&#8249;</button>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val in" id="r-in">0</div><div class="stat-label">💚 دخل الشهر</div></div>
+    <div class="stat-card"><div class="stat-val out" id="r-out">0</div><div class="stat-label">🔴 مصاريف</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)" id="r-saved">0</div><div class="stat-label">🟡 تحوّش</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--blue)" id="r-net">0</div><div class="stat-label">📊 صافي</div></div>
+  </div>
+  <div class="section-title">توزيع المصاريف</div>
+  <div class="card" id="expenseBreakdown"></div>
+  <div class="section-title">معاملات الشهر</div>
+  <div class="card" id="monthTxList" style="padding:4px 16px 4px"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('wallet',this)"><span class="icon">💳</span><span>المحفظة</span><div class="nav-dot"></div></button>
+  <button class="nav-btn" onclick="showPage('savings',this)"><span class="icon">🪙</span><span>التحويش</span><div class="nav-dot"></div></button>
+  <button class="nav-btn" onclick="showPage('expenses',this)"><span class="icon">🛒</span><span>المصاريف</span><div class="nav-dot"></div></button>
+  <button class="nav-btn" onclick="showPage('reports',this)"><span class="icon">📊</span><span>التقارير</span><div class="nav-dot"></div></button>
+</nav>
+
+<!-- MODAL: WALLET -->
+<div class="modal-overlay" id="walletModal">
+  <div class="modal">
+    <div class="modal-title">➕ معاملة جديدة <button class="modal-close" onclick="closeModal('walletModal')">✕</button></div>
+    <div class="type-btns">
+      <button class="type-btn in active" onclick="setType('in',this)">↑ دخل</button>
+      <button class="type-btn out" onclick="setType('out',this)">↓ سحب</button>
+      <button class="type-btn save-t" onclick="setType('save',this)">🪙 تحويش</button>
+    </div>
+    <div class="form-group"><label class="form-label">المبلغ (جنيه)</label><input class="form-input" id="w-amount" type="number" placeholder="0.00" inputmode="decimal"></div>
+    <div class="form-group"><label class="form-label">البيان</label><input class="form-input" id="w-desc" type="text" placeholder="مثال: مرتب الشهر"></div>
+    <div class="form-group"><label class="form-label">التاريخ</label><input class="form-input" id="w-date" type="date"></div>
+    <button class="submit-btn" onclick="addWalletTx()">حفظ المعاملة</button>
+  </div>
+</div>
+
+<!-- MODAL: SAVINGS -->
+<div class="modal-overlay" id="savingsModal">
+  <div class="modal">
+    <div class="modal-title">🪙 إضافة تحويش <button class="modal-close" onclick="closeModal('savingsModal')">✕</button></div>
+    <div class="form-group"><label class="form-label">النوع</label>
+      <select class="form-select" id="s-type">
+        <option>💵 فلوس كاش</option>
+        <option>🥇 دهب عيار 21</option>
+        <option>🥇 دهب عيار 18</option>
+        <option>🥈 فضة</option>
+        <option>📦 أخرى</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">الوصف</label><input class="form-input" id="s-desc" type="text" placeholder="مثال: خاتم دهب 5 جرام"></div>
+    <div class="form-group"><label class="form-label">القيمة (جنيه)</label><input class="form-input" id="s-amount" type="number" placeholder="0.00" inputmode="decimal"></div>
+    <div class="form-group"><label class="form-label">التاريخ</label><input class="form-input" id="s-date" type="date"></div>
+    <button class="submit-btn" onclick="addSaving()">حفظ التحويش</button>
+  </div>
+</div>
+
+<!-- MODAL: EXPENSES -->
+<div class="modal-overlay" id="expensesModal">
+  <div class="modal">
+    <div class="modal-title">🛒 تسجيل مصروف <button class="modal-close" onclick="closeModal('expensesModal')">✕</button></div>
+    <div class="form-group"><label class="form-label">الفئة</label>
+      <select class="form-select" id="e-cat">
+        <option>🍔 أكل وشرب</option>
+        <option>🚌 مواصلات</option>
+        <option>🏠 إيجار / فواتير</option>
+        <option>👗 ملابس</option>
+        <option>💊 صحة وأدوية</option>
+        <option>📱 اشتراكات</option>
+        <option>🎭 ترفيه</option>
+        <option>🎁 هدايا</option>
+        <option>📦 متفرقات</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">التفاصيل</label><input class="form-input" id="e-desc" type="text" placeholder="مثال: غداء من المطعم"></div>
+    <div class="form-group"><label class="form-label">المبلغ (جنيه)</label><input class="form-input" id="e-amount" type="number" placeholder="0.00" inputmode="decimal"></div>
+    <div class="form-group"><label class="form-label">التاريخ</label><input class="form-input" id="e-date" type="date"></div>
+    <button class="submit-btn" onclick="addExpense()">حفظ المصروف</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title">⚠️ تأكيد الحذف</div>
+    <p style="color:var(--text2);margin-bottom:20px;font-size:14px;">هل أنت متأكد إنك عايز تحذف العنصر ده؟</p>
+    <div style="display:flex;gap:10px">
+      <button class="submit-btn" style="background:var(--red);flex:1" id="confirmYes">حذف</button>
+      <button class="submit-btn" style="background:var(--surface3);flex:1;color:var(--text)" onclick="closeModal('confirmModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state = { wallet: [], savings: [], expenses: [] };
+let currentType = 'in';
+let reportMonth = new Date();
+
+function saveState() { localStorage.setItem('medakharati_v2', JSON.stringify(state)); }
+function loadState() { const d = localStorage.getItem('medakharati_v2'); if (d) state = JSON.parse(d); }
+function formatNum(n) { return Number(n).toLocaleString('ar-EG', {minimumFractionDigits:0,maximumFractionDigits:2}); }
+function formatDate(d) { return new Date(d).toLocaleDateString('ar-EG', {day:'numeric',month:'long',year:'numeric'}); }
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function setToday() {
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ar-EG',{day:'numeric',month:'short',year:'numeric'});
+  ['w-date','s-date','e-date'].forEach(id => { const el=document.getElementById(id); if(el) el.value=today(); });
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='reports') renderReports();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); setToday(); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function setType(type, btn) {
+  currentType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function addWalletTx() {
+  const amount = parseFloat(document.getElementById('w-amount').value);
+  const desc = document.getElementById('w-desc').value.trim();
+  const date = document.getElementById('w-date').value;
+  if (!amount || amount <= 0) return alert('أدخل مبلغ صحيح');
+  if (!desc) return alert('أدخل البيان');
+  state.wallet.unshift({id:Date.now(), type:currentType, amount, desc, date});
+  saveState(); renderWallet(); closeModal('walletModal');
+  document.getElementById('w-amount').value='';
+  document.getElementById('w-desc').value='';
+}
+
+function deleteWallet(id) {
+  confirmDelete(() => { state.wallet=state.wallet.filter(t=>t.id!==id); saveState(); renderWallet(); });
+}
+
+function renderWallet() {
+  let balance=0, totalIn=0, totalOut=0, totalSaved=0;
+  state.wallet.forEach(t => {
+    if(t.type==='in'){balance+=t.amount;totalIn+=t.amount;}
+    else if(t.type==='out'){balance-=t.amount;totalOut+=t.amount;}
+    else if(t.type==='save'){balance-=t.amount;totalSaved+=t.amount;}
+  });
+  document.getElementById('walletBalance').textContent=formatNum(balance);
+  document.getElementById('totalIn').textContent=formatNum(totalIn)+' ج';
+  document.getElementById('totalOut').textContent=formatNum(totalOut)+' ج';
+  document.getElementById('totalSaved').textContent=formatNum(totalSaved)+' ج';
+  const list=document.getElementById('walletTxList');
+  if(!state.wallet.length){list.innerHTML='<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">لا يوجد معاملات بعد</div></div>';return;}
+  const icons={in:'⬆️',out:'⬇️',save:'🪙'};
+  const cls={in:'in',out:'out',save:'save'};
+  const signs={in:'+',out:'-',save:'-'};
+  list.innerHTML=state.wallet.slice(0,50).map(t=>`
+    <div class="tx-item">
+      <div class="tx-icon ${cls[t.type]}">${icons[t.type]}</div>
+      <div class="tx-info"><div class="tx-desc">${t.desc}</div><div class="tx-date">📅 ${formatDate(t.date)}</div></div>
+      <div class="tx-amount ${t.type==='in'?'in':'out'}">${signs[t.type]}${formatNum(t.amount)}</div>
+      <button class="tx-del" onclick="deleteWallet(${t.id})">🗑️</button>
+    </div>`).join('');
+}
+
+function addSaving() {
+  const type=document.getElementById('s-type').value;
+  const desc=document.getElementById('s-desc').value.trim();
+  const amount=parseFloat(document.getElementById('s-amount').value);
+  const date=document.getElementById('s-date').value;
+  if(!amount||amount<=0) return alert('أدخل القيمة');
+  state.savings.unshift({id:Date.now(),type,desc,amount,date});
+  saveState(); renderSavings(); closeModal('savingsModal');
+  document.getElementById('s-amount').value='';
+  document.getElementById('s-desc').value='';
+}
+
+function deleteSaving(id) {
+  confirmDelete(()=>{state.savings=state.savings.filter(s=>s.id!==id);saveState();renderSavings();});
+}
+
+function renderSavings() {
+  const total=state.savings.reduce((s,i)=>s+i.amount,0);
+  document.getElementById('savingsTotal').textContent=formatNum(total);
+  const list=document.getElementById('savingsList');
+  if(!state.savings.length){list.innerHTML='<div class="empty"><div class="empty-icon">🪙</div><div class="empty-text">لا يوجد تحويش بعد</div></div>';return;}
+  list.innerHTML=state.savings.map(s=>`
+    <div class="saving-item">
+      <div class="saving-icon">${s.type.split(' ')[0]}</div>
+      <div class="saving-info">
+        <div class="saving-name">${s.type.split(' ').slice(1).join(' ')}${s.desc?' — '+s.desc:''}</div>
+        <div class="saving-amount">${formatNum(s.amount)} جنيه</div>
+        <div class="saving-date">📅 ${formatDate(s.date)}</div>
+      </div>
+      <button class="saving-del" onclick="deleteSaving(${s.id})">🗑️</button>
+    </div>`).join('');
+}
+
+function addExpense() {
+  const cat=document.getElementById('e-cat').value;
+  const desc=document.getElementById('e-desc').value.trim();
+  const amount=parseFloat(document.getElementById('e-amount').value);
+  const date=document.getElementById('e-date').value;
+  if(!amount||amount<=0) return alert('أدخل المبلغ');
+  state.expenses.unshift({id:Date.now(),cat,desc,amount,date});
+  saveState(); renderExpenses(); closeModal('expensesModal');
+  document.getElementById('e-amount').value='';
+  document.getElementById('e-desc').value='';
+}
+
+function deleteExpense(id) {
+  confirmDelete(()=>{state.expenses=state.expenses.filter(e=>e.id!==id);saveState();renderExpenses();});
+}
+
+function renderExpenses() {
+  const total=state.expenses.reduce((s,e)=>s+e.amount,0);
+  document.getElementById('expensesTotal').textContent=formatNum(total);
+  const list=document.getElementById('expensesList');
+  if(!state.expenses.length){list.innerHTML='<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">لا يوجد مصاريف مسجلة</div></div>';return;}
+  list.innerHTML=state.expenses.slice(0,50).map(e=>`
+    <div class="tx-item">
+      <div class="tx-icon exp">${e.cat.split(' ')[0]}</div>
+      <div class="tx-info"><div class="tx-desc">${e.desc||e.cat.split(' ').slice(1).join(' ')}</div><div class="tx-date">${e.cat.split(' ').slice(1).join(' ')} • 📅 ${formatDate(e.date)}</div></div>
+      <div class="tx-amount out">-${formatNum(e.amount)}</div>
+      <button class="tx-del" onclick="deleteExpense(${e.id})">🗑️</button>
+    </div>`).join('');
+}
+
+const MONTHS_AR=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+function changeMonth(dir) {
+  reportMonth=new Date(reportMonth.getFullYear(),reportMonth.getMonth()+dir,1);
+  renderReports();
+}
+
+function renderReports() {
+  const y=reportMonth.getFullYear(), m=reportMonth.getMonth();
+  document.getElementById('monthLabel').textContent=`${MONTHS_AR[m]} ${y}`;
+  const inRange=ds=>{const d=new Date(ds);return d.getFullYear()===y&&d.getMonth()===m;};
+  let rIn=0,rOut=0,rSaved=0;
+  const monthTx=[];
+  state.wallet.forEach(t=>{
+    if(!inRange(t.date))return;
+    monthTx.push(t);
+    if(t.type==='in')rIn+=t.amount;
+    else if(t.type==='out')rOut+=t.amount;
+    else if(t.type==='save')rSaved+=t.amount;
+  });
+  let rExp=0;const catMap={};
+  state.expenses.forEach(e=>{
+    if(!inRange(e.date))return;
+    rExp+=e.amount;
+    catMap[e.cat]=(catMap[e.cat]||0)+e.amount;
+  });
+  rOut+=rExp;
+  const rNet=rIn-rOut-rSaved;
+  document.getElementById('r-in').textContent=formatNum(rIn);
+  document.getElementById('r-out').textContent=formatNum(rOut);
+  document.getElementById('r-saved').textContent=formatNum(rSaved);
+  document.getElementById('r-net').textContent=formatNum(rNet);
+  document.getElementById('r-net').style.color=rNet>=0?'var(--green)':'var(--red)';
+  const breakdown=document.getElementById('expenseBreakdown');
+  const maxVal=Math.max(...Object.values(catMap),1);
+  if(!Object.keys(catMap).length){breakdown.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text">لا يوجد مصاريف هذا الشهر</div></div>';}
+  else{breakdown.innerHTML='<div class="bar-chart">'+Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+    <div class="bar-row">
+      <div class="bar-label">${cat.split(' ').slice(0,2).join(' ')}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${val/maxVal*100}%;background:var(--purple)"></div></div>
+      <div class="bar-val" style="color:var(--purple)">${formatNum(val)}</div>
+    </div>`).join('')+'</div>';}
+  const mtl=document.getElementById('monthTxList');
+  if(!monthTx.length){mtl.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text">لا يوجد معاملات هذا الشهر</div></div>';}
+  else{const icons={in:'⬆️',out:'⬇️',save:'🪙'};const signs={in:'+',out:'-',save:'-'};
+  mtl.innerHTML=monthTx.map(t=>`
+    <div class="tx-item">
+      <div class="tx-icon ${t.type==='in'?'in':'out'}">${icons[t.type]}</div>
+      <div class="tx-info"><div class="tx-desc">${t.desc}</div><div class="tx-date">📅 ${formatDate(t.date)}</div></div>
+      <div class="tx-amount ${t.type==='in'?'in':'out'}">${signs[t.type]}${formatNum(t.amount)}</div>
+    </div>`).join('');}
+}
+
+let pendingDelete=null;
+function confirmDelete(fn) {
+  pendingDelete=fn;
+  document.getElementById('confirmModal').classList.add('open');
+  document.getElementById('confirmYes').onclick=()=>{if(pendingDelete)pendingDelete();pendingDelete=null;closeModal('confirmModal');};
+}
+
+loadState();setToday();renderWallet();renderSavings();renderExpenses();
+</script>
+</body>
+</html>
